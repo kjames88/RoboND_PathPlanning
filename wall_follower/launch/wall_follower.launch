@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="wall_follower" type="wall_follower_node" name="wall_follower" output="screen">
+    <remap from="wall_follower/cmd_vel" to="cmd_vel_mux/input/teleop"/>
+  </node>
+</launch>

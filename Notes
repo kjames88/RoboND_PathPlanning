@@ -1,0 +1,11 @@
+Save map:
+  rosrun map_server map_saver -f <map_name>
+View ros params:
+  rosparam list
+Set/get ros params:
+  rosparam set <param>
+  rosparam get <param>
+Launch params in
+  gmapping_demo.launch
+Global localization
+  rosservice call /global_localization "{}"
