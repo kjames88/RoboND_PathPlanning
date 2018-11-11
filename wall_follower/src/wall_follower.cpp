@@ -87,6 +87,8 @@ bool robot_move(const ROBOT_MOVEMENT move_type)
 bool following_wall = false;
 bool thats_a_door = false;
 bool crashed = false;
+bool policyReverse = false;
+ros::Time rosclock;
 
 // The laser_callback function will be called each time a laser scan data is received
 void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
@@ -107,9 +109,17 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         if (std::isnan(laser_ranges[i])) {
             nan_count++;
         }
-        if (i < range_size / 4) {
-            if (laser_ranges[i] > range_max) {
-                range_max = laser_ranges[i];
+        if (policyReverse) {
+            if (i > ((3 * range_size) / 4)) {
+                if (laser_ranges[i] > range_max) {
+                    range_max = laser_ranges[i];
+                }
+            }
+        } else {
+            if (i < range_size / 4) {
+                if (laser_ranges[i] > range_max) {
+                    range_max = laser_ranges[i];
+                }
             }
         }
 
@@ -135,21 +145,21 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         bool left_proximity = left_side > 0.0;
         bool right_proximity = right_side > 0.0;
 
-        ROS_INFO("[ROBOT] range_min %f follow %d door %d left_side %f right_side %f\n",
-            range_min, following_wall, thats_a_door, left_side, right_side);
+        ROS_INFO("[ROBOT] reverse %d range_min %f follow %d door %d left_side %f right_side %f\n",
+            policyReverse, range_min, following_wall, thats_a_door, left_side, right_side);
         if (range_min <= 0.5 && !thats_a_door) {
             following_wall = true;
             crashed = false;
             robot_move(STOP);
-            if (right_proximity && left_side >= right_side) {
+            if (policyReverse) {
                 robot_move(TURN_RIGHT);
-            }
-            else {
+            } else {
                 robot_move(TURN_LEFT);
             }
         }
         else {
-            ROS_INFO("[ROBOT] No crash follow: %f , %d, %d \n", range_max, following_wall, thats_a_door);
+            ROS_INFO("[ROBOT] No crash: center range %f range_max %f, bounds %f, %f, follow %d, door %d \n",
+                laser_ranges[range_size/2], range_max, laser_ranges[0], laser_ranges[range_size-1], following_wall, thats_a_door);
             robot_move(STOP);
             if (following_wall) {
                 if (range_max >= 2.0) {
@@ -160,13 +170,18 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 }
             }
             if (thats_a_door) {
-                if (laser_ranges[0] <= 0.5) {
+                float sense_range = policyReverse ? laser_ranges[range_size-1] : laser_ranges[0];
+                if (sense_range <= 0.5 || laser_ranges[range_size/2] <= 1.5) {
                     thats_a_door = false;
                 }
                 else {
-                    robot_move(GO_RIGHT);
+                    if (policyReverse) {
+                        robot_move(GO_LEFT);
+                    } else {
+                        robot_move(GO_RIGHT);
+                    }
                 }
-                ROS_INFO("[ROBOT] I am goin' right!: %d \n", thats_a_door);
+                ROS_INFO("[ROBOT] door response!: %d \n", thats_a_door);
             }
             else {
                 robot_move(FORWARD);
@@ -186,6 +201,7 @@ int main(int argc, char** argv)
 
     // Create a ROS NodeHandle object
     ros::NodeHandle n;
+    rosclock = ros::Time::now();
 
     // Inform ROS master that we will be publishing a message of type geometry_msgs::Twist on the robot actuation topic with a publishing queue size of 100
     motor_command_publisher = n.advertise<geometry_msgs::Twist>("cmd_vel", 100);
@@ -198,6 +214,12 @@ int main(int argc, char** argv)
     while (ros::ok()) {
         ros::spinOnce();
         time_between_ros_wakeups.sleep();
+        ros::Duration delta = ros::Time::now() - rosclock;
+        if (delta.sec > 300) {
+            policyReverse = !policyReverse;
+            rosclock = ros::Time::now();
+            ROS_INFO("[ROBOT] reverse policy!");
+        }
     }
 
     return 0;
