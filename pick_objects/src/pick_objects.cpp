@@ -18,7 +18,7 @@ int main(int argc, char** argv){
   }
 
   int num_goals = 2;
-  float goals[2][2] = { {-4.0, 4.0}, {6.0, -5.8} };
+  float goals[2][2] = { {-4.0, 3.0}, {7.0, -5.8} };
 
   for (int g = 0; g < num_goals; g++) {
     move_base_msgs::MoveBaseGoal goal;

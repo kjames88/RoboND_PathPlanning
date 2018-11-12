@@ -5,7 +5,7 @@
 ros::Subscriber odometry_sub;
 
 int num_goals = 2;
-float locations[2][2] = { {-4.0, 4.0}, {6.0, -5.8} };
+float locations[2][2] = { {-4.0, 3.0}, {7.0, -5.8} };
 int goal_mux = 0;
 std::vector<float> dist_history;
 int dist_history_ptr = 0;
