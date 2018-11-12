@@ -11,10 +11,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(simple_navigation_goals src/simple_navigation.cpp)
-target_link_libraries(simple_navigation_goals ${catkin_LIBRARIES})
+add_executable(pick_objects src/pick_objects.cpp)
+target_link_libraries(pick_objects ${catkin_LIBRARIES})
 add_dependencies(
-  simple_navigation_goals
+  pick_objects
   ${pick_objects_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
