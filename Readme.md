@@ -2,9 +2,17 @@
 
 12 November 2018
 
-## Environment
+## Project Description
 
 A simple interior environment was constructed in the Gazebo Building Editor.  The purpose of the project is to map the environment using slam\_gmapping in ROS, then to navigate to two locations on the map.
+
+### Packages
+
+This project uses the turtlebot robot and simulator.  Simultaneous localization and mapping use slam\_gmapping, and navigation uses AMCL.  Wall following and marker code was provided.
+
+### Exercise
+
+The work done in this project consists of using the various packages together to create the autonomous navigating robot.  Obtaining a relatively clean and accurate map was the most involved part of the process.  Few net modifications were made to the gmapping parameters:  reduce the angular and linear update values and increase the number of particles.  Gmapping has a tendancy to move the walls closer to fit its expectation when too few particles are used.  The resulting map had significantly inaccurate dimensions (e.g. 3m too narrow over a 10m span).  Since navigation relies on the map, the robot was unable to reach much of the environment even though it was not blocked.  Often gmapping leaves artifacts generated under stale hypotheses.  Unfortunately, these are not just rendering aftifacts:  they exist in the final generated map.
 
 ## Wall Follower
 
