@@ -59,8 +59,11 @@ void odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_msg) {
                     // distance to goal is small and stable, looks like we've reached a goal
                     ROS_INFO("Goal reached!  pos %f,%f  goal %f,%f  dist %f, travel %f", p_x, p_y, g_x, g_y, dist,
                         travel);
-                    if (0) {
+                    if (goal_mux == 0) {
                         marker_state = 2;  // erase the current marker
+                    } else {
+                        set_marker_location(goal_mux);
+                        marker_state = 1;  // draw new marker
                     }
                     goal_mux++;
                 }
@@ -118,8 +121,8 @@ int main( int argc, char** argv )
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
   odometry_sub = n.subscribe("odom", 1000, odometry_callback);
 
-  int marker_mux = 0;
-  set_marker_location(marker_mux);
+  goal_mux = 0;
+  set_marker_location(goal_mux);
   marker_state = 1;
   visualization_msgs::Marker marker;
   ros::Time marker_time = ros::Time::now();
@@ -136,9 +139,7 @@ int main( int argc, char** argv )
               marker_pub.publish(marker);
               // make sure rviz is subscribed before we stop publishing ADD
               if (marker_pub.getNumSubscribers() >= 1) {
-                  marker_mux++;
-                  marker_time = ros::Time::now();
-                  marker_state = 5;
+                  marker_state = 0;
               }
               break;
           case 2:
@@ -146,26 +147,24 @@ int main( int argc, char** argv )
               setup_marker(&marker, visualization_msgs::Marker::DELETE);
               // Publish the marker
               marker_pub.publish(marker);
-              marker_time = ros::Time::now();
-              marker_state = 3;
+              marker_state = 0;  // 5
               break;
           case 3:
+              marker_time = ros::Time::now();
+              marker_state = 5;
+              break;
+          case 4:
+              marker_time = ros::Time::now();
+              marker_state = 6;
+              break;
+          case 5:
               // delay then draw
               d = ros::Time::now() - marker_time;
               if (d.sec >= 5) {
-                  marker_state = 4;
-              }
-              break;
-          case 4:
-              if (marker_mux < num_goals) {
-                  set_marker_location(marker_mux);
                   marker_state = 1;
-              } else {
-                  // no new marker to display
-                  marker_state = 0;
               }
               break;
-          case 5:
+          case 6:
               // delay then erase
               d = ros::Time::now() - marker_time;
               if (d.sec >= 5) {
