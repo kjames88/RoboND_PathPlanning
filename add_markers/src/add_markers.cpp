@@ -117,9 +117,16 @@ int main( int argc, char** argv )
 {
   ros::init(argc, argv, "add_markers");
   ros::NodeHandle n;
-  ros::Rate r(1);
+  bool standalone = false;
+  if (ros::param::get("/standalone", standalone)) {
+    std::cout << "/standalone = " << standalone << std::endl;
+  } else {
+    std::cout << "param not found" << std::endl;
+  }
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
-  odometry_sub = n.subscribe("odom", 1000, odometry_callback);
+  if (standalone == false) {
+    odometry_sub = n.subscribe("odom", 1000, odometry_callback);
+  }
 
   goal_mux = 0;
   set_marker_location(goal_mux);
@@ -139,7 +146,7 @@ int main( int argc, char** argv )
               marker_pub.publish(marker);
               // make sure rviz is subscribed before we stop publishing ADD
               if (marker_pub.getNumSubscribers() >= 1) {
-                  marker_state = 0;
+                  marker_state = (standalone && goal_mux == 0) ? 4 : 0;
               }
               break;
           case 2:
@@ -147,7 +154,13 @@ int main( int argc, char** argv )
               setup_marker(&marker, visualization_msgs::Marker::DELETE);
               // Publish the marker
               marker_pub.publish(marker);
-              marker_state = 0;  // 5
+              if (standalone) {
+                goal_mux++;
+                set_marker_location(goal_mux);  // dropoff location
+                marker_state = 3;
+              } else {
+                marker_state = 0;
+              }
               break;
           case 3:
               marker_time = ros::Time::now();
